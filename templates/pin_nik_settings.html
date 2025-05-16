@@ -12,6 +12,13 @@
 {% block content %}
 <div class="main-container bg-white">
     <h2 class="text-center mb-4">PIN-NIK Settings</h2>
+    <div class="mb-3">
+        <select id="nikStatusFilter" class="form-select" style="width: 200px;">
+            <option value="">Show All</option>
+            <option value="set">NIK Set</option>
+            <option value="not_set">NIK Not Set</option>
+        </select>
+    </div>
     <div class="table-responsive">
         <table id="pinNikTable" class="table table-striped">
             <thead>
@@ -55,7 +62,7 @@
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
 $(document).ready(function() {
-    // Initialize DataTable
+    // Initialize DataTable first
     var table = $('#pinNikTable').DataTable({
         scrollX: false,
         pageLength: 25,
@@ -70,13 +77,42 @@ $(document).ready(function() {
         }
     });
 
+    // Add custom filtering function after table initialization
+    $.fn.dataTable.ext.search.push(
+        function(settings, searchData, index) {
+            var filterValue = $('#nikStatusFilter').val();
+            if (!filterValue) {
+                return true;
+            }
+            
+            var nikSelect = $(table.row(index).node()).find('.nik-select');
+            var nikValue = nikSelect.val();
+            
+            if (filterValue === 'set') {
+                return nikValue && nikValue !== '';
+            }
+            
+            if (filterValue === 'not_set') {
+                return !nikValue || nikValue === '';
+            }
+            
+            return true;
+        }
+    );
+
+    // Add filter change event
+    $('#nikStatusFilter').on('change', function() {
+        table.draw();
+    });
+
     // Handle select change event using event delegation
     $(document).on('change', '.nik-select', function() {
         const pin = $(this).data('pin');
         const nik = $(this).val();
 
         if (!nik) {
-            return; // Don't do anything if clearing the selection
+            table.draw(); // Redraw table to update filters
+            return;
         }
 
         fetch('/pin_nik_settings/update', {
@@ -98,6 +134,7 @@ $(document).ready(function() {
                     toast: true,
                     position: 'top-end'
                 });
+                table.draw(); // Redraw table to update filters
             } else {
                 throw new Error(data.message || 'Failed to update PIN-NIK mapping');
             }
@@ -110,6 +147,7 @@ $(document).ready(function() {
             });
             // Reset select to previous value on error
             $(this).val($(this).data('previous-value')).trigger('change.select2');
+            table.draw(); // Redraw table to update filters
         });
     });
 
