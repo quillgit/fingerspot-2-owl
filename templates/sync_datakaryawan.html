@@ -1,0 +1,95 @@
+{% extends "layout.html" %}
+
+{% block title %}Sync Data Karyawan{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bootstrap-4/bootstrap-4.css" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="main-container bg-white">
+    <h2 class="text-center mb-4">Sync Data Karyawan</h2>
+    <div class="text-center mb-4">
+        <p>Last sync: <span id="lastSync">{{ last_sync if last_sync else 'Never' }}</span></p>
+        <button onclick="syncData()" class="btn btn-primary">Sync Now</button>
+    </div>
+    <div class="mt-4">
+        <h4>Sync Status</h4>
+        <div id="syncResults">
+            <p>Total record ERP: <span id="totalRecords">Loading...</span></p>
+            <p>Recorded Local: <span id="updatedRecords">Loading...</span></p>
+            <p>New records to sync: <span id="newRecords">Loading...</span></p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+// Add function to fetch initial status
+function fetchSyncStatus() {
+    fetch('/sync_datakaryawan/check')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('totalRecords').textContent = data.owl_count || 0;
+            document.getElementById('updatedRecords').textContent = data.local_count || 0;
+            document.getElementById('newRecords').textContent = data.difference || 0;
+            if (data.last_sync) {
+                document.getElementById('lastSync').textContent = new Date(data.last_sync).toLocaleString();
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching sync status:', error);
+            document.getElementById('totalRecords').textContent = 'Error';
+            document.getElementById('updatedRecords').textContent = 'Error';
+            document.getElementById('newRecords').textContent = 'Error';
+        });
+}
+
+// Call fetchSyncStatus when page loads
+document.addEventListener('DOMContentLoaded', fetchSyncStatus);
+
+// Existing syncData function
+function syncData() {
+    Swal.fire({
+        title: 'Syncing Data...',
+        text: 'Please wait while we sync the data',
+        didOpen: () => {
+            Swal.showLoading();
+        },
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        showConfirmButton: false
+    });
+    
+    fetch('/sync_datakaryawan/sync', {
+        method: 'POST',
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('totalRecords').textContent = data.total;
+        document.getElementById('updatedRecords').textContent = data.updated;
+        document.getElementById('newRecords').textContent = data.new;
+        document.getElementById('lastSync').textContent = new Date().toLocaleString();
+        
+        Swal.fire({
+            icon: data.success ? 'success' : 'error',
+            title: data.success ? 'Sync Completed' : 'Sync Failed',
+            text: data.message || (data.success ? 'Data synchronized successfully' : 'Failed to sync data'),
+            timer: 3000,
+            timerProgressBar: true
+        });
+    })
+    .catch(error => {
+        Swal.fire({
+            icon: 'error',
+            title: 'Sync Error',
+            text: 'Error during sync: ' + (error.message || 'Unknown error occurred'),
+            timer: 3000,
+            timerProgressBar: true
+        });
+    });
+}
+</script>
+{% endblock %}

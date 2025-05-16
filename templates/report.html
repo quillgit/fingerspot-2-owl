@@ -1,0 +1,79 @@
+{% extends "layout.html" %}
+
+{% block title %}Report Preview{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css" rel="stylesheet">
+<style>
+    .report-container {
+        margin: 2rem auto;
+        padding: 2rem;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 0 15px rgba(0,0,0,0.1);
+    }
+    .action-buttons {
+        margin-bottom: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="report-container">
+    <h2 class="text-center mb-4">Attendance Report</h2>
+    <div class="action-buttons text-end">
+        <button class="btn btn-success" onclick="exportToExcel()">Export to Excel</button>
+    </div>
+    <div class="table-responsive">
+        <table id="reportTable" class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Employee Name</th>
+                    {% for date in dates %}
+                    <th colspan="2">{{ date }}</th>
+                    {% endfor %}
+                    <th>Total Present</th>
+                </tr>
+                <tr>
+                    <th></th>
+                    {% for date in dates %}
+                    <th>In</th>
+                    <th>Out</th>
+                    {% endfor %}
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in data %}
+                <tr>
+                    <td>{{ row.name }}</td>
+                    {% for attendance in row.attendance %}
+                    <td {% if attendance.is_late %}class="text-danger"{% endif %}>{{ attendance.in }}</td>
+                    <td>{{ attendance.out }}</td>
+                    {% endfor %}
+                    <td>{{ row.total_present }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.5/xlsx.full.min.js"></script>
+<script>
+$(document).ready(function() {
+    $('#reportTable').DataTable({
+        scrollX: true,
+        fixedColumns: true
+    });
+});
+
+function exportToExcel() {
+    window.location.href = '/export_excel';
+}
+</script>
+{% endblock %}
