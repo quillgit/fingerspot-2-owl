@@ -67,8 +67,7 @@ def login():
                 return redirect(url_for('login'))
                 
         except Exception as e:
-            flash(f'Database connection error: {str(e)}')
-            return redirect(url_for('login'))
+            return render_template('error.html', error_message=f'Database connection error: {str(e)}')
             
     return render_template('login.html')
 
@@ -119,10 +118,7 @@ def pivot_index():
                              date_range=date_range,
                              lokasitugas_options=lokasitugas_options)
     except Exception as e:
-        flash(f'Error loading pivot report page: {str(e)}', 'error')
-        return render_template('pivot_index.html',
-                             date_range={'min_date': None, 'max_date': None},
-                             lokasitugas_options=[])
+        return render_template('error.html', error_message=f'Error loading pivot report page: {str(e)}')
 
 # Add to all other routes
 @app.route('/upload', methods=['POST'])
@@ -277,8 +273,7 @@ def export_csv():
             )
             
         except Exception as e:
-            flash(f'Database error during CSV export: {str(e)}')
-            return redirect(url_for('export_csv'))
+            return render_template('error.html', error_message=f'Database error during CSV export: {str(e)}')
 
         # After getting the data, automatically process it
         df = pd.DataFrame(rows, columns=['tanggal', 'pegawai_nama', 'jammasuk', 'jamkeluar'])
@@ -305,14 +300,14 @@ def report():
             cursor.execute("SELECT DISTINCT lokasitugas FROM att_log WHERE lokasitugas IS NOT NULL ORDER BY lokasitugas")
             lokasitugas_options = cursor.fetchall()
         except Exception as e:
-            return render_template('error.html', error=f'Error fetching lokasitugas: {str(e)}')
+            return render_template('error.html', error_message=f'Error fetching lokasitugas: {str(e)}')
         
         # Get date range for default values (last 30 days)
         try:
             cursor.execute("SELECT MIN(DATE(scan_date)) as min_date, MAX(DATE(scan_date)) as max_date FROM att_log")
             date_range = cursor.fetchone()
         except Exception as e:
-            return render_template('error.html', error=f'Error fetching date range: {str(e)}')
+            return render_template('error.html', error_message=f'Error fetching date range: {str(e)}')
         
         cursor.close()
         conn.close()
@@ -322,7 +317,7 @@ def report():
                              date_range=date_range)
         
     except Exception as e:
-        return render_template('error.html', error=f'Database connection error: {str(e)}')
+        return render_template('error.html', error_message=f'Database connection error: {str(e)}')
 
 @app.route('/export_excel')
 @login_required
@@ -349,8 +344,7 @@ def export_excel():
         )
         
     except Exception as e:
-        flash(f'Error generating Excel file: {str(e)}')
-        return redirect(url_for('export_csv'))
+        return render_template('error.html', error_message=f'Error generating Excel file: {str(e)}')
 
 @app.route('/sync_datakaryawan')
 @login_required
@@ -602,24 +596,21 @@ def pin_nik_settings():
             """)
             employees = local_cursor.fetchall()
         except Exception as e:
-            flash(f'Error loading employee data: {str(e)}', 'error')
-            return redirect(url_for('index'))
+            return render_template('error.html', error_message=f'Error loading employee data: {str(e)}')
         
         # Get all employees from datakaryawan_owl
         try:
             local_cursor.execute("SELECT nik, namakaryawan FROM datakaryawan_owl ORDER BY namakaryawan")
             datakaryawan = local_cursor.fetchall()
         except Exception as e:
-            flash(f'Error loading datakaryawan data: {str(e)}', 'error')
-            return redirect(url_for('index'))
+            return render_template('error.html', error_message=f'Error loading datakaryawan data: {str(e)}')
         
         return render_template('pin_nik_settings.html', 
                              employees=employees,
                              datakaryawan=datakaryawan)
     
     except Exception as e:
-        flash(f'Database connection error: {str(e)}', 'error')
-        return redirect(url_for('index'))
+        return render_template('error.html', error_message=f'Database connection error: {str(e)}')
     finally:
         if local_cursor:
             local_cursor.close()
@@ -637,19 +628,23 @@ def update_pin_nik():
         pin = data.get('pin')
         nik = data.get('nik')
         
-        if not pin or not nik:
-            return jsonify({'success': False, 'message': 'PIN and NIK are required'})
+        if not pin:
+            return jsonify({'success': False, 'message': 'PIN is required'})
         
         try:
             local_conn = get_connection()
             local_cursor = local_conn.cursor()
             
-            # Update or insert PIN-NIK mapping
-            local_cursor.execute("""
-                INSERT INTO pin_nik (pin, nik) 
-                VALUES (%s, %s)
-                ON DUPLICATE KEY UPDATE nik = VALUES(nik)
-            """, (pin, nik))
+            if nik is None or nik == '':
+                # Delete the PIN-NIK mapping if NIK is null or empty
+                local_cursor.execute("DELETE FROM pin_nik WHERE pin = %s", (pin,))
+            else:
+                # Update or insert PIN-NIK mapping
+                local_cursor.execute("""
+                    INSERT INTO pin_nik (pin, nik) 
+                    VALUES (%s, %s)
+                    ON DUPLICATE KEY UPDATE nik = VALUES(nik)
+                """, (pin, nik))
             
             local_conn.commit()
             return jsonify({'success': True})
@@ -958,31 +953,34 @@ def sync_data():
 
 @app.route('/setup', methods=['GET', 'POST'])
 def setup_database():
-    if request.method == 'POST':
-        config = {
-            'local_host': request.form['local_host'],
-            'local_port': int(request.form['local_port']),
-            'local_database': request.form['local_database'],
-            'local_user': request.form['local_user'],
-            'local_password': request.form['local_password'],
-            'owl_host': request.form['owl_host'],
-            'owl_port': int(request.form['owl_port']),
-            'owl_database': request.form['owl_database'],
-            'owl_user': request.form['owl_user'],
-            'owl_password': request.form['owl_password'],
-            'server_url': request.form['server_url'].rstrip('/')  # Remove trailing slash if present
-        }
-        
-        success, error = test_connection(config)
-        if success:
-            save_config(config)
-            flash('Database configuration saved successfully!', 'success')
-            return redirect(url_for('index'))
-        else:
-            flash(f'Connection test failed: {error}', 'danger')
-            return redirect(url_for('setup_database'))
+    try:
+        if request.method == 'POST':
+            config = {
+                'local_host': request.form['local_host'],
+                'local_port': int(request.form['local_port']),
+                'local_database': request.form['local_database'],
+                'local_user': request.form['local_user'],
+                'local_password': request.form['local_password'],
+                'owl_host': request.form['owl_host'],
+                'owl_port': int(request.form['owl_port']),
+                'owl_database': request.form['owl_database'],
+                'owl_user': request.form['owl_user'],
+                'owl_password': request.form['owl_password'],
+                'server_url': request.form['server_url'].rstrip('/')  # Remove trailing slash if present
+            }
             
-    return render_template('db_setup.html')
+            success, error = test_connection(config)
+            if success:
+                save_config(config)
+                flash('Database configuration saved successfully!', 'success')
+                return redirect(url_for('index'))
+            else:
+                flash(f'Connection test failed: {error}', 'danger')
+                return redirect(url_for('setup_database'))
+                
+        return render_template('db_setup.html')
+    except Exception as e:
+        return render_template('error.html', error_message=f'Error in database setup: {str(e)}')
 
 # Add error handlers
 @app.errorhandler(404)

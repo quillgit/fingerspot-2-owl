@@ -3,77 +3,55 @@
 {% block title %}PIN-NIK Settings{% endblock %}
 
 {% block extra_css %}
+<link href="https://unpkg.com/tabulator-tables@6.2.1/dist/css/tabulator_bootstrap5.min.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
 <style>
-    /* DataTables Styling */
-    .dataTables_wrapper .dataTables_length select {
-        padding: 0.5rem 1rem;
-        font-size: 0.875rem;
-        line-height: 1.25rem;
+    /* Custom Tabulator Styling */
+    .tabulator {
+        border-radius: 0.5rem;
         border: 1px solid #e5e7eb;
-        border-radius: 0.375rem;
-        background-color: #fff;
-        background-position: right 0.5rem center;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
     }
 
-    .dataTables_wrapper .dataTables_filter input {
-        margin-top: 0.25rem;
-        display: block;
-        width: 100%;
-        border-radius: 0.375rem;
-        border: 1px solid #e5e7eb;
-        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    .tabulator .tabulator-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 0.5rem 0.5rem 0 0;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .tabulator .tabulator-header .tabulator-col {
+        background: transparent;
+        border-right: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .tabulator .tabulator-header .tabulator-col .tabulator-col-content {
+        padding: 12px 16px;
+    }
+
+    .tabulator .tabulator-header .tabulator-col .tabulator-col-title {
+        font-weight: 600;
+        color: #ffffff;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
         font-size: 0.875rem;
-        padding: 0.5rem 0.75rem;
     }
 
-    .dataTables_wrapper .dataTables_paginate .paginate_button {
-        padding: 0.5rem 1rem;
-        margin-left: -1px;
-        border: 1px solid #e5e7eb;
-        background-color: #fff;
-        font-size: 0.875rem;
-        font-weight: 500;
-        color: #374151;
+    .tabulator .tabulator-row {
+        border-bottom: 1px solid #f1f5f9;
     }
 
-    .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
-        background-color: #f9fafb;
-        color: #111827;
+    .tabulator .tabulator-row:hover {
+        background-color: #f8fafc;
     }
 
-    .dataTables_wrapper .dataTables_paginate .paginate_button.current {
-        z-index: 10;
-        background-color: #eff6ff;
-        border-color: #3b82f6;
-        color: #2563eb;
+    .tabulator .tabulator-row .tabulator-cell {
+        padding: 12px 16px;
+        border-right: 1px solid #f1f5f9;
     }
 
-    .dataTables_wrapper .dataTables_paginate .paginate_button.disabled {
-        background-color: #f3f4f6;
-        color: #9ca3af;
-        cursor: not-allowed;
-    }
-
-    .dataTables_wrapper .dataTables_info {
-        font-size: 0.875rem;
-        color: #4b5563;
-        padding: 0.5rem 0;
-    }
-
-    .dataTables_wrapper .dataTables_processing {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        padding: 0.5rem 1rem;
-        background-color: #fff;
-        border: 1px solid #e5e7eb;
-        border-radius: 0.375rem;
-        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-        font-size: 0.875rem;
-        color: #4b5563;
+    .tabulator .tabulator-row:last-child {
+        border-bottom: none;
     }
 
     /* Select2 Styling */
@@ -81,6 +59,17 @@
         border-radius: 0.375rem;
         border: 1px solid #e5e7eb;
         box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        height: 38px;
+    }
+
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        line-height: 36px;
+        padding-left: 12px;
+        padding-right: 20px;
+    }
+
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 36px;
     }
 
     .select2-dropdown {
@@ -99,82 +88,76 @@
         color: #fff;
     }
 
-    /* Table Custom Styling */
-    #pinNikTable {
-        table-layout: fixed;
-        width: 100%;
-    }
-
-    #pinNikTable thead th {
-        padding: 1rem 1.5rem;
-        background-color: #f9fafb;
-        text-align: left;
-        font-size: 0.75rem;
-        font-weight: 500;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: #6b7280;
-        white-space: normal;
-        word-wrap: break-word;
-    }
-
-    #pinNikTable tbody td {
-        padding: 1.25rem 1.5rem;
-        font-size: 0.875rem;
-        color: #111827;
-        white-space: normal;
-        word-wrap: break-word;
-        vertical-align: middle;
-    }
-
-    /* Column specific widths */
-    #pinNikTable th:nth-child(1),
-    #pinNikTable td:nth-child(1) {
-        width: 15%;
-        min-width: 100px;
-    }
-
-    #pinNikTable th:nth-child(2),
-    #pinNikTable td:nth-child(2) {
-        width: 25%;
-        min-width: 150px;
-    }
-
-    #pinNikTable th:nth-child(3),
-    #pinNikTable td:nth-child(3) {
-        width: 45%;
-        min-width: 200px;
-    }
-
-    #pinNikTable th:nth-child(4),
-    #pinNikTable td:nth-child(4) {
-        width: 15%;
-        min-width: 100px;
-    }
-
-    /* Select2 container within table */
-    #pinNikTable .select2-container {
+    /* NIK Select Editor Styling */
+    .tabulator-cell .select2-container {
         width: 100% !important;
     }
 
-    /* Improve cell content wrapping */
-    #pinNikTable td > * {
-        max-width: 100%;
-        overflow: hidden;
-        text-overflow: ellipsis;
+    .tabulator-cell .select2-selection {
+        border: none !important;
+        height: 100% !important;
     }
 
-    /* Hover state */
-    #pinNikTable tbody tr:hover {
-        background-color: #f9fafb;
-        transition: background-color 150ms ease-in-out;
+    .tabulator-cell .select2-selection__rendered {
+        padding: 0 !important;
+        line-height: normal !important;
+    }
+
+    /* Clear NIK option styling */
+    .select2-results__option[data-select2-id*=""] {
+        font-style: italic;
+        color: #dc2626;
+    }
+
+    /* Filter styling */
+    .filter-container {
+        margin-bottom: 1rem;
+    }
+
+    .filter-container select {
+        padding: 0.5rem 1rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.375rem;
+        background-color: #fff;
+        font-size: 0.875rem;
+        min-width: 150px;
+    }
+
+    .filter-container select:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+    }
+
+    /* Status badges */
+    .status-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        border-radius: 9999px;
+        text-transform: uppercase;
+        letter-spacing: 0.025em;
+    }
+
+    .status-badge.set {
+        background-color: #dcfce7;
+        color: #166534;
+    }
+
+    .status-badge.not-set {
+        background-color: #fef3c7;
+        color: #92400e;
     }
 
     /* Responsive adjustments */
     @media (max-width: 768px) {
-        #pinNikTable thead th,
-        #pinNikTable tbody td {
-            padding: 0.75rem 1rem;
+        .tabulator .tabulator-row .tabulator-cell {
+            padding: 8px 12px;
+        }
+        
+        .tabulator .tabulator-header .tabulator-col .tabulator-col-content {
+            padding: 8px 12px;
         }
     }
 </style>
@@ -186,49 +169,24 @@
         <div class="px-6 py-8">
             <h2 class="text-3xl font-bold text-gray-900 text-center mb-8">PIN-NIK Settings</h2>
             
-            <!-- Filter -->
-            <div class="mb-6">
-                <select id="nikStatusFilter" class="w-48 rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                    <option value="">Show All</option>
-                    <option value="set">NIK Set</option>
-                    <option value="not_set">NIK Not Set</option>
-                </select>
+            <!-- Filters -->
+            <div class="filter-container flex flex-wrap gap-4 mb-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">NIK Status</label>
+                    <select id="nikStatusFilter" class="rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" style="padding: 0.5rem 1rem; border: 1px solid #e5e7eb; font-size: 0.875rem; min-width: 150px;">
+                        <option value="">Show All</option>
+                        <option value="set">NIK Set</option>
+                        <option value="not_set">NIK Not Set</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Search</label>
+                    <input type="text" id="searchInput" placeholder="Search employees..." class="rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" style="min-width: 250px; padding: 0.5rem 1rem; border: 1px solid #e5e7eb; font-size: 0.875rem;">
+                </div>
             </div>
 
-            <!-- Table -->
-            <div class="overflow-x-auto">
-                <table id="pinNikTable" class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PIN</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employee Name</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">NIK</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        {% for employee in employees %}
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ employee.pin }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ employee.pegawai_nama }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <select class="nik-select w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" data-pin="{{ employee.pin }}">
-                                    <option value="">Select NIK</option>
-                                    {% for dk in datakaryawan %}
-                                    <option value="{{ dk.nik }}" {% if dk.nik == employee.nik %}selected{% endif %}>
-                                        {{ dk.nik }} - {{ dk.namakaryawan }}
-                                    </option>
-                                    {% endfor %}
-                                </select>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="hidden px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Saved</span>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+            <!-- Tabulator Table -->
+            <div id="pinNikTable"></div>
         </div>
     </div>
 </div>
@@ -236,101 +194,244 @@
 
 {% block extra_js %}
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+<script src="https://unpkg.com/tabulator-tables@6.2.1/dist/js/tabulator.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
 $(document).ready(function() {
-    // Initialize DataTable first
-    var table = $('#pinNikTable').DataTable({
-        scrollX: false,
-        pageLength: 25,
-        searching: true,
-        dom: "<'flex flex-col sm:flex-row items-center justify-between'<'flex-1'l><'flex-1'f>>" +
-             "<'overflow-x-auto'tr>" +
-             "<'flex flex-col sm:flex-row items-center justify-between'<'flex-1'i><'flex-1'p>>",
-        language: {
-            search: "",
-            searchPlaceholder: "Search employees...",
-            lengthMenu: "Show _MENU_ entries",
-            info: "Showing _START_ to _END_ of _TOTAL_ entries",
-            infoEmpty: "Showing 0 to 0 of 0 entries",
-            paginate: {
-                first: "First",
-                last: "Last",
-                next: "Next",
-                previous: "Previous"
-            }
+    // Prepare data for Tabulator
+    var tableData = [
+        {% for employee in employees %}
+        {
+            pin: "{{ employee.pin }}",
+            pegawai_nama: "{{ employee.pegawai_nama }}",
+            nik: "{{ employee.nik or '' }}",
+            current_nik: "{{ employee.nik or '' }}"
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ];
+
+    // Prepare NIK options for select dropdown
+    var nikOptions = [
+        {
+            value: "",
+            label: "-- Clear NIK --"
         },
-        drawCallback: function(settings) {
-            // Reinitialize Select2 after each draw
-            $('.nik-select').select2({
+        {% for dk in datakaryawan %}
+        {
+            label: "{{ dk.nik }} - {{ dk.namakaryawan }}",
+            value: "{{ dk.nik }}"
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ];
+
+    // Custom Select2 editor
+    var selectEditor = function(cell, onRendered, success, cancel) {
+        var selectElement = $('<select class="nik-select-editor">');
+        selectElement.append('<option value="">-- Clear NIK --</option>');
+        
+        nikOptions.forEach(function(option) {
+            if (option.value !== "") {  // Skip the empty option since we already added it
+                selectElement.append('<option value="' + option.value + '">' + option.label + '</option>');
+            }
+        });
+        
+        selectElement.val(cell.getValue());
+        
+        onRendered(function() {
+            selectElement.select2({
                 theme: 'bootstrap-5',
                 width: '100%',
                 placeholder: 'Search NIK or Name',
-                allowClear: true
+                allowClear: true,
+                dropdownParent: $('body')
             });
+            
+            selectElement.focus();
+            selectElement.select2('open');
+        });
+        
+        selectElement.on('select2:select', function() {
+            success(selectElement.val());
+        });
+        
+        selectElement.on('select2:close', function() {
+            success(selectElement.val());
+        });
+        
+        selectElement.on('select2:clear', function() {
+            success('');
+        });
+        
+        return selectElement[0];
+    };
+
+    // Custom status formatter
+    var statusFormatter = function(cell) {
+        var value = cell.getValue();
+        if (value && value !== '') {
+            return '<span class="status-badge set">NIK Set</span>';
+        } else {
+            return '<span class="status-badge not-set">NIK Not Set</span>';
+        }
+    };
+
+    // Initialize Tabulator
+    var table = new Tabulator("#pinNikTable", {
+        data: tableData,
+        layout: "fitColumns",
+        pagination: "local",
+        paginationSize: 25,
+        paginationSizeSelector: [10, 25, 50, 100],
+        movableColumns: true,
+        resizableRows: true,
+        selectable: false,
+        responsiveLayout: "hide",
+        columns: [
+            {
+                title: "PIN",
+                field: "pin",
+                width: 100,
+                sorter: "string",
+                headerFilter: "input",
+                headerFilterPlaceholder: "Filter PIN..."
+            },
+            {
+                title: "Employee Name",
+                field: "pegawai_nama",
+                width: 200,
+                sorter: "string",
+                headerFilter: "input",
+                headerFilterPlaceholder: "Filter Name..."
+            },
+            {
+                title: "NIK",
+                field: "nik",
+                width: 300,
+                sorter: "string",
+                editor: selectEditor,
+                formatter: function(cell) {
+                    var value = cell.getValue();
+                    if (value && value !== '') {
+                        // Find the corresponding label
+                        var option = nikOptions.find(function(opt) {
+                            return opt.value === value;
+                        });
+                        return option ? option.label : value;
+                    }
+                    return '<span class="text-gray-400 italic">No NIK assigned</span>';
+                },
+                cellEdited: function(cell) {
+                    var row = cell.getRow();
+                    var pin = row.getData().pin;
+                    var nik = cell.getValue();
+                    
+                    // Always update, even if nik is empty (to clear the NIK)
+                    if (nik !== row.getData().current_nik) {
+                        updatePinNik(pin, nik, row);
+                    }
+                }
+            },
+            {
+                title: "Status",
+                field: "nik",
+                width: 120,
+                sorter: "string",
+                formatter: statusFormatter,
+                headerFilter: "select",
+                headerFilterParams: {
+                    "": "All",
+                    "set": "NIK Set",
+                    "not_set": "NIK Not Set"
+                },
+                headerFilterFunc: function(headerValue, rowValue) {
+                    if (headerValue === "") return true;
+                    if (headerValue === "set") return rowValue && rowValue !== "";
+                    if (headerValue === "not_set") return !rowValue || rowValue === "";
+                    return true;
+                }
+            }
+        ],
+        locale: true,
+        langs: {
+            "default": {
+                "pagination": {
+                    "page_size": "Show",
+                    "first": "First",
+                    "first_title": "First Page",
+                    "last": "Last",
+                    "last_title": "Last Page",
+                    "prev": "Prev",
+                    "prev_title": "Previous Page",
+                    "next": "Next",
+                    "next_title": "Next Page",
+                    "all": "All",
+                    "counter": {
+                        "showing": "Showing",
+                        "of": "of",
+                        "rows": "rows",
+                        "pages": "pages"
+                    }
+                }
+            }
         }
     });
 
-    // Add custom filtering function after table initialization
-    $.fn.dataTable.ext.search.push(
-        function(settings, searchData, index) {
-            var filterValue = $('#nikStatusFilter').val();
-            if (!filterValue) {
-                return true;
-            }
-            
-            var nikSelect = $(table.row(index).node()).find('.nik-select');
-            var nikValue = nikSelect.val();
-            
-            if (filterValue === 'set') {
-                return nikValue && nikValue !== '';
-            }
-            
-            if (filterValue === 'not_set') {
-                return !nikValue || nikValue === '';
-            }
-            
-            return true;
-        }
-    );
+    // Custom search functionality
+    $('#searchInput').on('input', function() {
+        table.setFilter([
+            [
+                {field: "pin", type: "like", value: this.value},
+                {field: "pegawai_nama", type: "like", value: this.value}
+            ]
+        ]);
+    });
 
-    // Add filter change event
+    // Custom NIK status filter
     $('#nikStatusFilter').on('change', function() {
-        table.draw();
+        var filterValue = this.value;
+        if (filterValue === '') {
+            table.removeFilter("nik");
+        } else if (filterValue === 'set') {
+            table.setFilter("nik", "!=", "");
+        } else if (filterValue === 'not_set') {
+            table.setFilter("nik", "=", "");
+        }
     });
 
-    // Handle select change event using event delegation
-    $(document).on('change', '.nik-select', function() {
-        const pin = $(this).data('pin');
-        const nik = $(this).val();
-
-        if (!nik) {
-            table.draw(); // Redraw table to update filters
-            return;
-        }
-
+    // Function to update PIN-NIK mapping
+    function updatePinNik(pin, nik, row) {
+        // Convert empty string to null for the API
+        var nikValue = nik === '' ? null : nik;
+        
         fetch('/pin_nik_settings/update', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ pin, nik })
+            body: JSON.stringify({ pin: pin, nik: nikValue })
         })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
+                // Update the current_nik field to track changes
+                row.update({current_nik: nik});
+                
+                var message = nik === '' ? 'NIK cleared successfully' : 'PIN-NIK mapping updated successfully';
+                
                 Swal.fire({
                     icon: 'success',
                     title: 'Success',
-                    text: 'PIN-NIK mapping updated successfully',
+                    text: message,
                     timer: 2000,
                     timerProgressBar: true,
                     toast: true,
-                    position: 'top-end'
+                    position: 'top-end',
+                    showConfirmButton: false
                 });
-                table.draw(); // Redraw table to update filters
+                
+                // Refresh the table to update status column
+                table.redraw();
             } else {
                 throw new Error(data.message || 'Failed to update PIN-NIK mapping');
             }
@@ -341,59 +442,16 @@ $(document).ready(function() {
                 title: 'Error',
                 text: error.message || 'An error occurred while updating PIN-NIK mapping'
             });
-            // Reset select to previous value on error
-            $(this).val($(this).data('previous-value')).trigger('change.select2');
-            table.draw(); // Redraw table to update filters
+            
+            // Revert the cell value to previous state
+            row.update({nik: row.getData().current_nik});
         });
-    });
+    }
 
-    // Store previous value before change
-    $(document).on('select2:selecting', '.nik-select', function(e) {
-        $(this).data('previous-value', $(this).val());
+    // Handle window resize
+    $(window).on('resize', function() {
+        table.redraw();
     });
 });
 </script>
 {% endblock %}
-
-/* Update the DataTables filter styling */
-.dataTables_filter {
-    margin: 1rem 0;
-    width: 100%;
-}
-
-.dataTables_filter label {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.dataTables_filter input {
-    flex: 1;
-    min-width: 250px;
-    padding: 0.5rem 1rem;
-    font-size: 0.875rem;
-    line-height: 1.25rem;
-    border: 1px solid #e5e7eb;
-    border-radius: 0.375rem;
-    background-color: #fff;
-    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-}
-
-.dataTables_filter input:focus {
-    outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
-}
-
-/* Improve table wrapper layout */
-.dataTables_wrapper {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
-/* Make the length selector match the filter style */
-.dataTables_length select {
-    min-width: 100px;
-}
