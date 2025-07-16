@@ -1,0 +1,413 @@
+{% extends "layout.html" %}
+
+{% block title %}Attendance Pivot Report{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://unpkg.com/tabulator-tables@5.4.4/dist/css/tabulator.min.css" rel="stylesheet">
+<style>
+    .form-section {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 15px;
+    }
+    .loading {
+        display: none;
+        text-align: center;
+        padding: 20px;
+    }
+    .select2-container {
+        width: 100% !important;
+    }
+    .select2-container--default .select2-selection--multiple {
+        min-height: 31px;
+        border-radius: 0.375rem;
+    }
+    .form-label.small {
+        font-size: 0.875rem;
+        margin-bottom: 0.25rem;
+    }
+
+    /* #ajaxResults {
+        width: 100%;
+        overflow-x: auto;
+        overflow-y: auto;
+    } */
+    
+    .tabulator {
+        font-size: 12px;
+        width: 100%;
+        overflow-x: auto;
+    }
+    
+    .tabulator .tabulator-header {
+        background-color: #f8f9fa;
+    }
+    
+    .tabulator .tabulator-cell {
+        padding: 4px 8px;
+        min-width: 70px;
+    }
+    
+    .tabulator .tabulator-col {
+        min-width: 70px;
+    }
+    
+    .tabulator .tabulator-col-title {
+        white-space: nowrap;
+    }
+    
+    #pivotTable {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: auto;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2>Attendance Pivot Report</h2>
+            </div>
+
+                <!-- Filter Form -->
+                <div class="form-section">
+                    <form method="POST" action="{{ url_for('generate_pivot_report') }}" id="reportForm">
+                        <div class="row align-items-end">
+                            <div class="col-md-2">
+                                <div class="mb-2">
+                                    <label for="start_date" class="form-label small">Start Date</label>
+                                    <input type="date" 
+                                           class="form-control form-control-sm" 
+                                           id="start_date" 
+                                           name="start_date" 
+                                           value=""
+                                           required>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="mb-2">
+                                    <label for="end_date" class="form-label small">End Date</label>
+                                    <input type="date" 
+                                           class="form-control form-control-sm" 
+                                           id="end_date" 
+                                           name="end_date" 
+                                           value=""
+                                           required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-2">
+                                    <label for="lokasitugas" class="form-label small">Lokasi Tugas</label>
+                                    <select class="form-select form-select-sm" 
+                                            id="lokasitugas" 
+                                            name="lokasitugas" 
+                                            multiple 
+                                            required>
+                                        {% for lokasi in lokasitugas_options %}
+                                        <option value="{{ lokasi.lokasitugas }}"{% if 'HO' in lokasi.lokasitugas %} selected{% endif %}>{{ lokasi.lokasitugas }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="mb-2">
+                                    <button type="button" 
+                                            class="btn btn-info btn-sm w-100" 
+                                            onclick="generateAjaxReport()">
+                                        <i class="fas fa-sync"></i> Load Data
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="mb-2">
+                                    <button id="exportTableBtn" 
+                                            class="btn btn-success btn-sm w-100" 
+                                            onclick="exportTableToExcel()" 
+                                            disabled>
+                                        <i class="fas fa-file-excel"></i> Export Excel
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Loading Indicator -->
+                <div id="loadingIndicator" class="loading">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading report data...</p>
+                </div>
+
+                <!-- AJAX Results Container -->
+                <div id="ajaxResults" style="display: none;">
+                    <div class="card mt-3">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5>Report Results</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="resultSummary" class="row mb-3"></div>
+                            <div class="alert alert-info" role="alert">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Tip:</strong> Use horizontal scroll to view all date columns. The Employee column is frozen for easy reference.
+                            </div>
+                            <div id="pivotTable" style="width: 100%; overflow-x: auto;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Instructions -->
+                <!-- <div class="card">
+                    <div class="card-body">
+                        <h5>How to Use</h5>
+                        <ol>
+                            <li>Select the date range for your report</li>
+                            <li>Choose one or more lokasi tugas (work locations)</li>
+                            <li>Click "Generate Report" to view the pivot table</li>
+                            <li>Use "Export to Excel" to download the report</li>
+                        </ol>
+                        
+                        <h6>Report Features:</h6>
+                        <ul>
+                            <li><strong>Columns:</strong> Dates with sub-columns for "Jam Masuk" and "Jam Keluar"</li>
+                            <li><strong>Rows:</strong> Employee names (filtered by lokasi tugas)</li>
+                            <li><strong>Values:</strong> Earliest check-in time and latest check-out time per day</li>
+                            <li><strong>Summary:</strong> Total attendance days per employee</li>
+                            <li><strong>Formatting:</strong> Weekend highlighting and late arrival indicators</li>
+                        </ul>
+                    </div>
+                </div> -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script type="text/javascript" src="https://unpkg.com/tabulator-tables@5.4.4/dist/js/tabulator.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+        let pivotTableInstance = null;
+
+        $(document).ready(function() {
+            // Initialize Select2 for multiple select
+            $('#lokasitugas').select2({
+                placeholder: 'Select lokasi tugas',
+                allowClear: true
+            });
+        });
+
+        function exportToExcel() {
+            const form = document.getElementById('reportForm');
+            const formData = new FormData(form);
+            
+            // Validate form
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+            
+            // Change form action to export endpoint
+            const originalAction = form.action;
+            form.action = "{{ url_for('export_pivot_excel') }}";
+            form.submit();
+            form.action = originalAction;
+        }
+
+        function exportTableToExcel() {
+            if (pivotTableInstance) {
+                pivotTableInstance.download("xlsx", "pivot_report.xlsx");
+            }
+        }
+
+        function generateAjaxReport() {
+            const form = document.getElementById('reportForm');
+            const formData = new FormData(form);
+            
+            // Validate form
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+            
+            // Convert FormData to JSON
+            const data = {
+                start_date: formData.get('start_date'),
+                end_date: formData.get('end_date'),
+                lokasitugas: formData.getAll('lokasitugas')
+            };
+            
+            // Show loading
+            $('#loadingIndicator').show();
+            $('#ajaxResults').hide();
+            
+            // Disable export button
+            $('#exportTableBtn').prop('disabled', true);
+            
+            // Make AJAX request
+            fetch("{{ url_for('api_pivot_report') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                $('#loadingIndicator').hide();
+                if (data.status === 'success') {
+                    displayAjaxResults(data.data);
+                    // Enable export button
+                    $('#exportTableBtn').prop('disabled', false);
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                $('#loadingIndicator').hide();
+                alert('Error: ' + error.message);
+            });
+        }
+
+        function displayAjaxResults(data) {
+            // Update summary
+            let summaryHtml = '';
+            summaryHtml += '<div class="col-md-3"><strong>Total Employees:</strong> ' + data.total_employees + '</div>';
+            summaryHtml += '<div class="col-md-3"><strong>Total Records:</strong> ' + data.total_records + '</div>';
+            summaryHtml += '<div class="col-md-3"><strong>Period:</strong> ' + data.start_date + ' to ' + data.end_date + '</div>';
+            summaryHtml += '<div class="col-md-3"><strong>Locations:</strong> ' + data.selected_lokasitugas.join(', ') + '</div>';
+            
+            $('#resultSummary').html(summaryHtml);
+            
+            // Prepare columns for Tabulator
+            let columns = [
+                {
+                    title: "Employee", 
+                    field: "employee", 
+                    width: 200, 
+                    minWidth: 180,
+                    frozen: true,
+                    formatter: function(cell, formatterParams) {
+                        const value = cell.getValue();
+                        const rowData = cell.getRow().getData();
+                        return '<strong>' + value + '</strong><br><small>' + rowData.lokasitugas + '</small>';
+                    },
+                    tooltip: true,
+                    headerTooltip: "Employee Name and Location"
+                }
+            ];
+            
+            // Add date columns
+            data.dates.forEach(date => {
+                columns.push({
+                    title: date,
+                    columns: [
+                        {
+                            title: "Masuk",
+                            field: "masuk_" + date.replace(/-/g, '_'),
+                            width: 80,
+                            minWidth: 70,
+                            hozAlign: "center",
+                            tooltip: true,
+                            headerTooltip: date + " - Jam Masuk"
+                        },
+                        {
+                            title: "Keluar", 
+                            field: "keluar_" + date.replace(/-/g, '_'),
+                            width: 80,
+                            minWidth: 70,
+                            hozAlign: "center",
+                            tooltip: true,
+                            headerTooltip: date + " - Jam Keluar"
+                        }
+                    ]
+                });
+            });
+            
+            // Add total column
+            columns.push({
+                title: "Total Hadir",
+                field: "total_hadir",
+                width: 100,
+                minWidth: 90,
+                hozAlign: "center",
+                formatter: function(cell, formatterParams) {
+                    return '<strong>' + cell.getValue() + '</strong>';
+                },
+                tooltip: true,
+                headerTooltip: "Total Days Present"
+            });
+            
+            // Prepare data for Tabulator
+            let tableData = [];
+            Object.keys(data.pivot_data).forEach(employee => {
+                const employeeData = data.pivot_data[employee];
+                const employeeInfo = data.employee_info[employee];
+                
+                let rowData = {
+                    employee: employee,
+                    lokasitugas: employeeInfo.lokasitugas,
+                    total_hadir: employeeData.total_hadir || 0
+                };
+                
+                data.dates.forEach(date => {
+                    const dayData = employeeData[date] || {};
+                    const dateKey = date.replace(/-/g, '_');
+                    rowData['masuk_' + dateKey] = dayData.jammasuk || '-';
+                    rowData['keluar_' + dateKey] = dayData.jamkeluar || '-';
+                });
+                
+                tableData.push(rowData);
+            });
+            
+            // Destroy existing table if exists
+            if (pivotTableInstance) {
+                pivotTableInstance.destroy();
+            }
+            
+            // Create new Tabulator table
+            pivotTableInstance = new Tabulator("#pivotTable", {
+                data: tableData,
+                columns: columns,
+                layout: "fitDataFill", // This will show all columns with horizontal scroll
+                responsiveLayout: false, // Disable responsive layout to show all columns
+                persistentLayout: true,
+                pagination: "local",
+                paginationSize: 50,
+                paginationSizeSelector: [25, 50, 100],
+                movableColumns: true,
+                resizableColumns: true,
+                resizableRows: true,
+                selectable: true,
+                tooltips: true,
+                height: "500px",
+                maxHeight: "600px",
+                // Enable horizontal scrolling
+                scrollToColumnPosition: "left",
+                scrollToRowPosition: "top",
+                columnHeaderVertAlign: "middle",
+                // Ensure all columns are visible
+                columnMinWidth: 70,
+                columnDefaults: {
+                    tooltip: true,
+                    headerTooltip: true,
+                },
+                // Table build callback
+                tableBuilt: function() {
+                    // Force table to show all columns
+                    this.redraw(true);
+                }
+            });
+            
+            $('#ajaxResults').show();
+        }
+    </script>
+{% endblock %}

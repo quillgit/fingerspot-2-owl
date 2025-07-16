@@ -1,0 +1,81 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="container mt-4">
+    <h2>System Updates</h2>
+    <div id="updateStatus" class="alert" style="display: none;"></div>
+    
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Current Version: <span id="currentVersion">Checking...</span></h5>
+            <p class="card-text" id="updateMessage"></p>
+            <button id="checkUpdateBtn" class="btn btn-primary">Check for Updates</button>
+            <button id="performUpdateBtn" class="btn btn-success" style="display: none;">Update Now</button>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const checkUpdateBtn = document.getElementById('checkUpdateBtn');
+    const performUpdateBtn = document.getElementById('performUpdateBtn');
+    const updateStatus = document.getElementById('updateStatus');
+    const currentVersion = document.getElementById('currentVersion');
+    const updateMessage = document.getElementById('updateMessage');
+
+    function checkForUpdates() {
+        fetch('/check_updates')
+            .then(response => response.json())
+            .then(data => {
+                currentVersion.textContent = data.current_version;
+                
+                if (data.update_available) {
+                    updateMessage.textContent = `New version ${data.server_version} is available!`;
+                    performUpdateBtn.style.display = 'inline-block';
+                    updateStatus.className = 'alert alert-info';
+                    updateStatus.textContent = 'Update is available!';
+                    updateStatus.style.display = 'block';
+                } else {
+                    updateMessage.textContent = 'Your application is up to date.';
+                    performUpdateBtn.style.display = 'none';
+                    updateStatus.className = 'alert alert-success';
+                    updateStatus.textContent = 'System is up to date!';
+                    updateStatus.style.display = 'block';
+                }
+            })
+            .catch(error => {
+                updateStatus.className = 'alert alert-danger';
+                updateStatus.textContent = 'Error checking for updates: ' + error;
+                updateStatus.style.display = 'block';
+            });
+    }
+
+    checkUpdateBtn.addEventListener('click', checkForUpdates);
+    
+    performUpdateBtn.addEventListener('click', function() {
+        updateStatus.className = 'alert alert-info';
+        updateStatus.textContent = 'Updating...';
+        updateStatus.style.display = 'block';
+        
+        fetch('/perform_update')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    updateStatus.className = 'alert alert-success';
+                    updateStatus.textContent = 'Update completed successfully! Please restart the application.';
+                    checkForUpdates();
+                } else {
+                    updateStatus.className = 'alert alert-danger';
+                    updateStatus.textContent = 'Update failed: ' + data.error;
+                }
+            })
+            .catch(error => {
+                updateStatus.className = 'alert alert-danger';
+                updateStatus.textContent = 'Error during update: ' + error;
+            });
+    });
+    
+    // Check for updates when page loads
+    checkForUpdates();
+});
+</script>
+{% endblock %}

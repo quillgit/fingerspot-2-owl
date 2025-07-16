@@ -1,0 +1,96 @@
+{% extends "layout.html" %}
+
+{% block title %}Database Setup{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-body p-5">
+                    <h2 class="text-center mb-4">Database Configuration</h2>
+                    
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category }}" role="alert">
+                                    {{ message }}
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <form method="POST" action="{{ url_for('setup_database') }}">
+                        <div class="mb-4">
+                            <h5 class="mb-3">Local Database</h5>
+                            <div class="mb-3">
+                                <label for="local_host" class="form-label">Host</label>
+                                <input type="text" class="form-control" id="local_host" name="local_host" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="local_port" class="form-label">Port</label>
+                                <input type="number" class="form-control" id="local_port" name="local_port" value="3306" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="local_database" class="form-label">Database Name</label>
+                                <input type="text" class="form-control" id="local_database" name="local_database" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="local_user" class="form-label">Username</label>
+                                <input type="text" class="form-control" id="local_user" name="local_user" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="local_password" class="form-label">Password</label>
+                                <input type="password" class="form-control" id="local_password" name="local_password" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <h5 class="mb-3">OWL Database</h5>
+                            <div class="mb-3">
+                                <label for="owl_host" class="form-label">Host</label>
+                                <input type="text" class="form-control" id="owl_host" name="owl_host" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="owl_port" class="form-label">Port</label>
+                                <input type="number" class="form-control" id="owl_port" name="owl_port" value="3306" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="owl_database" class="form-label">Database Name</label>
+                                <input type="text" class="form-control" id="owl_database" name="owl_database" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="owl_user" class="form-label">Username</label>
+                                <input type="text" class="form-control" id="owl_user" name="owl_user" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="owl_password" class="form-label">Password</label>
+                                <input type="password" class="form-control" id="owl_password" name="owl_password" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <h5 class="mb-3">Update Server Configuration</h5>
+                            <div class="mb-3">
+                                <label for="server_url" class="form-label">Server URL</label>
+                                <input type="text" class="form-control" id="server_url" name="server_url" 
+                                       placeholder="http://example.com/api" 
+                                       value="http://localhost:5000">
+                                <div class="form-text text-muted">
+                                    Enter the server URL for updates. Use http://localhost:5000 for local development.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-primary btn-lg px-5">
+                                Save Configuration
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

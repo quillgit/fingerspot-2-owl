@@ -1,30 +1,55 @@
 {% extends "layout.html" %}
 
 {% block title %}Export Absensi CSV{% endblock %}
+{% block page_title %}Export Absensi CSV{% endblock %}
 
 {% block content %}
-<div class="main-container bg-white">
-    <h2 class="text-center mb-4">Generate Absensi CSV by Date Range</h2>
-    <form method="post" class="custom-form">
-        <div class="row g-3">
-            <div class="col-md-6">
-                <div class="form-group">
-                    <label for="start_date" class="form-label">Start Date</label>
-                    <input type="date" id="start_date" name="start_date" class="form-control" required>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="form-group">
-                    <label for="end_date" class="form-label">End Date</label>
-                    <input type="date" id="end_date" name="end_date" class="form-control" required>
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-body p-5">
+                    <div class="text-center mb-4">
+                        <h2 class="h3">Generate Absensi CSV by Date Range</h2>
+                        <p class="text-muted">Select the date range to export attendance data</p>
+                    </div>
+
+                    <form method="post">
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="start_date" class="form-label">Start Date</label>
+                                    <input type="date" class="form-control" id="start_date" name="start_date" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="end_date" class="form-label">End Date</label>
+                                    <input type="date" class="form-control" id="end_date" name="end_date" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="text-center mt-4">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-download me-2"></i>
+                                Export CSV
+                            </button>
+                        </div>
+                    </form>
+
+                    {% with messages = get_flashed_messages() %}
+                        {% if messages %}
+                            {% for message in messages %}
+                                <div class="alert alert-success mt-4" role="alert">
+                                    {{ message }}
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
                 </div>
             </div>
         </div>
-        <div class="text-center mt-4">
-            <button type="submit" class="btn btn-primary px-4">
-                Export CSV
-            </button>
-        </div>
-    </form>
+    </div>
 </div>
 {% endblock %}

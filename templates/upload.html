@@ -1,20 +1,22 @@
 {% extends "layout.html" %}
 
 {% block title %}Upload Attendance CSV{% endblock %}
+{% block page_title %}Upload Attendance CSV{% endblock %}
 
 {% block content %}
-<div class="main-container bg-white">
-    <h2 class="text-center mb-4">Upload Attendance CSV</h2>
-    <form action="/upload" method="post" enctype="multipart/form-data" class="custom-form">
-        <div class="mb-3">
-            <input type="file" name="file" accept=".csv" class="form-control" required>
-            <small class="text-muted d-block mt-2">Please upload a CSV file with attendance data</small>
-        </div>
-        <div class="text-center">
-            <button type="submit" class="btn btn-primary px-4">
-                Generate Pivot Excel
-            </button>
-        </div>
-    </form>
+<div class="card shadow">
+    <div class="card-body p-5">
+        <form action="/upload" method="post" enctype="multipart/form-data" class="mx-auto" style="max-width: 600px;">
+            <div class="text-center border border-2 border-dashed rounded p-5">
+                <input type="file" name="file" accept=".csv" class="form-control" required>
+                <p class="text-muted mt-2 small">Please upload a CSV file with attendance data</p>
+            </div>
+            <div class="text-center mt-4">
+                <button type="submit" class="btn btn-primary px-4">
+                    Generate Pivot Excel
+                </button>
+            </div>
+        </form>
+    </div>
 </div>
 {% endblock %}

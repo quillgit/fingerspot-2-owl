@@ -1,0 +1,156 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="container mt-5">
+    <h2>Sinkronisasi Data</h2>
+    
+    <div id="sync-result" class="alert mt-3" style="display: none;">
+        <h4 id="sync-status"></h4>
+        <p id="sync-message"></p>
+        <p id="sync-time"></p>
+    </div>
+    
+    <div class="card mt-4">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label>Tanggal Mulai</label>
+                        <input type="date" class="form-control" id="start_date" required>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label>Tanggal Selesai</label>
+                        <input type="date" class="form-control" id="end_date" required>
+                    </div>
+                </div>
+            </div>
+            <div class="text-center mt-3">
+                <button id="sync-button" class="btn btn-primary btn-lg">Mulai Sinkronisasi</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="loading" class="mt-3" style="display: none;">
+        <div class="progress">
+            <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                 role="progressbar" 
+                 aria-valuenow="0" 
+                 aria-valuemin="0" 
+                 aria-valuemax="100" 
+                 style="width: 0%">
+                0%
+            </div>
+        </div>
+        <p class="mt-2 text-center">Sedang melakukan sinkronisasi...</p>
+    </div>
+</div>
+
+<script>
+document.getElementById('sync-button').addEventListener('click', function() {
+    const startDate = document.getElementById('start_date').value;
+    const endDate = document.getElementById('end_date').value;
+    
+    if (!startDate || !endDate) {
+        alert('Mohon isi tanggal mulai dan selesai');
+        return;
+    }
+    
+    if (new Date(startDate) > new Date(endDate)) {
+        alert('Tanggal mulai tidak boleh lebih besar dari tanggal selesai');
+        return;
+    }
+
+    const button = this;
+    const loading = document.getElementById('loading');
+    const resultDiv = document.getElementById('sync-result');
+    const statusHeader = document.getElementById('sync-status');
+    const messageText = document.getElementById('sync-message');
+    const timeText = document.getElementById('sync-time');
+    const progressBar = document.querySelector('.progress-bar');
+
+    // Reset progress bar
+    progressBar.style.width = '0%';
+    progressBar.textContent = '0%';
+    progressBar.setAttribute('aria-valuenow', 0);
+
+    // Disable button and show loading
+    button.disabled = true;
+    loading.style.display = 'block';
+    resultDiv.style.display = 'none';
+
+    // Make AJAX call
+    fetch('/sync_data', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            start_date: startDate,
+            end_date: endDate
+        })
+    })
+    .then(response => {
+        const reader = response.body.getReader();
+        const contentLength = +response.headers.get('Content-Length');
+        
+        let receivedLength = 0;
+        
+        return new ReadableStream({
+            start(controller) {
+                function push() {
+                    reader.read().then(({done, value}) => {
+                        if (done) {
+                            controller.close();
+                            return;
+                        }
+                        
+                        receivedLength += value.length;
+                        const progress = (receivedLength / contentLength) * 100;
+                        
+                        // Update progress bar
+                        progressBar.style.width = progress + '%';
+                        progressBar.textContent = Math.round(progress) + '%';
+                        progressBar.setAttribute('aria-valuenow', Math.round(progress));
+                        
+                        controller.enqueue(value);
+                        push();
+                    });
+                }
+                
+                push();
+            }
+        });
+    })
+    .then(stream => new Response(stream))
+    .then(response => response.json())
+    .then(data => {
+        // Show result
+        resultDiv.style.display = 'block';
+        resultDiv.className = 'alert mt-3 alert-' + (data.status === 'success' ? 'success' : 'danger');
+
+        if (data.status === 'success') {
+            statusHeader.textContent = 'Sinkronisasi Berhasil';
+            messageText.textContent = 'Jumlah data yang disinkronkan: ' + data.rows_synced;
+            timeText.textContent = 'Waktu sinkronisasi terakhir: ' + data.last_sync;
+        } else {
+            statusHeader.textContent = 'Sinkronisasi Gagal';
+            messageText.textContent = 'Error: ' + data.message;
+            timeText.textContent = '';
+        }
+    })
+    .catch(error => {
+        resultDiv.style.display = 'block';
+        resultDiv.className = 'alert mt-3 alert-danger';
+        statusHeader.textContent = 'Sinkronisasi Gagal';
+        messageText.textContent = 'Error: ' + error.message;
+        timeText.textContent = '';
+    })
+    .finally(() => {
+        // Re-enable button and hide loading
+        button.disabled = false;
+        loading.style.display = 'none';
+    });
+});
+</script>
+{% endblock %}
